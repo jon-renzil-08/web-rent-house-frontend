@@ -17,7 +17,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/atomics/use-toast";
-import { useLoginMutation } from "@/services/auth-service";
+import { useLoginMutation } from "@/services/auth.service";
 import { signIn } from "next-auth/react";
 
 const schema = yup.object().shape({
