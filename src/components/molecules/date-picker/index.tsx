@@ -14,8 +14,14 @@ import {
 } from "@/components/atomics/popover"
 import { useState } from "react"
 
-export function DatePickerDemo() {
-  const [date, setDate] = useState<Date>()
+interface DatePickerDemoProps {
+  placholder: string;
+  date?: Date;
+  setDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
+}
+
+export function DatePickerDemo({placholder, date, setDate}: DatePickerDemoProps) {
+  
 
   return (
     <Popover>
@@ -34,7 +40,7 @@ export function DatePickerDemo() {
               height={24}
               width={24}
             />
-            {date ? moment(date).format("MMMM DD, YYYY") : <span>dd/mm/yyyy</span>}
+            {date ? moment(date).format("MMMM DD, YYYY") : <span>{placholder}</span>}
           </div>
           <CalendarIcon className="h-4 w-4" />
         </Button>
