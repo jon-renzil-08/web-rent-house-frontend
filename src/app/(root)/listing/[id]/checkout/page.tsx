@@ -10,9 +10,36 @@ import Link from "next/link";
 import Listing from "./listing";
 import Review from "./review";
 import { useGetAllListingQuery } from "@/services/listing.service";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import moment from "moment";
+import { moneyFormat } from "@/lib/utils";
 
 function Checkout({ params }: { params: { id: string } }) {
-  const {data: listing} = useGetAllListingQuery(params.id);
+  const { data: listing } = useGetAllListingQuery(params.id);
+
+  const searchParams = useSearchParams();
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    moment(searchParams.get("start_date")).toDate()
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    moment(searchParams.get("end_date")).toDate()
+  );
+
+  const booking = useMemo(() => {
+    let totalDays = 0,
+      subTotal = 0,
+      tax = 0,
+      grandTotal = 0;
+
+    if (startDate && endDate) {
+      totalDays = moment(endDate).diff(startDate, "days");
+      subTotal = totalDays * listing?.data.price_per_day;
+      tax = subTotal * 0.1;
+      grandTotal = subTotal + tax;
+    }
+    return { totalDays, subTotal, tax, grandTotal };
+  }, [startDate, endDate, listing]);
 
   return (
     <main>
@@ -38,8 +65,16 @@ function Checkout({ params }: { params: { id: string } }) {
             </h1>
             <div className="rounded-[30px] mt-2.5 p-[30px] bg-white border border-border shadow-indicator space-y-5">
               <div className="space-y-5">
-                {/* <DatePickerDemo />
-                <DatePickerDemo /> */}
+                <DatePickerDemo
+                  placholder="Start date"
+                  date={startDate}
+                  setDate={setStartDate}
+                />
+                <DatePickerDemo
+                  placholder="End date"
+                  date={endDate}
+                  setDate={setEndDate}
+                />
               </div>
               <div className="space-y-5">
                 <CardBooking title="Total days" value="30 days" />
@@ -85,10 +120,22 @@ function Checkout({ params }: { params: { id: string } }) {
                   />
                 </Button>
               </div>
-              <CardBooking title="Bank Name" value="BuildWithAngga Fi" />
-              <CardBooking title="Bank Account" value="Nidejia Listings" />
-              <CardBooking title="Number" value="20193050" />
-              <Separator className="bg-border" />
+              <CardBooking
+                title="Total days"
+                value={`${booking.totalDays} days`}
+              />
+              <CardBooking
+                title="Sub total"
+                value={moneyFormat.format(booking.subTotal)}
+              />
+              <CardBooking
+                title="Tax (10%)"
+                value={moneyFormat.format(booking.tax)}
+              />
+              <CardBooking
+                title="Grand total price"
+                value={moneyFormat.format(booking.grandTotal)}
+              />
               <div className="flex items-center space-x-2">
                 <Checkbox id="terms" />
                 <label
