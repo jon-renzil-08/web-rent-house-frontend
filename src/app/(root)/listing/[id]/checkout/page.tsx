@@ -9,14 +9,20 @@ import { DatePickerDemo } from "@/components/molecules/date-picker";
 import Link from "next/link";
 import Listing from "./listing";
 import Review from "./review";
-import { useGetAllListingQuery } from "@/services/listing.service";
+import { useGetDetailListingQuery } from "@/services/listing.service";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import moment from "moment";
 import { moneyFormat } from "@/lib/utils";
+import { useTransactionMutation } from "@/services/transaction.service";
+import { useToast } from "@/components/atomics/use-toast";
 
 function Checkout({ params }: { params: { id: string } }) {
-  const { data: listing } = useGetAllListingQuery(params.id);
+  const { data: listing } = useGetDetailListingQuery(params.id);
+  const [transaction, { isLoading }] = useTransactionMutation();
+
+  const { toast } = useToast();
+  const router = useRouter();
 
   const searchParams = useSearchParams();
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -40,6 +46,28 @@ function Checkout({ params }: { params: { id: string } }) {
     }
     return { totalDays, subTotal, tax, grandTotal };
   }, [startDate, endDate, listing]);
+
+  const handlePayment = async () => {
+    // 
+
+    try {
+      const data = {
+        listing_id: listing.data.id,
+        start_date: moment(startDate).format('YYYY-MM-DD'),
+        end_date: moment(endDate).format('YYYY-MM-DD')
+      };
+      const res = await transaction(data).unwrap();
+      if (res.success) {
+        router.push(`/booking-success/${res.data.id}/success`)
+      }
+    } catch (error: any) {
+      toast({
+        title: "Something went wrong",
+        description: error.data.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <main>
@@ -77,11 +105,22 @@ function Checkout({ params }: { params: { id: string } }) {
                 />
               </div>
               <div className="space-y-5">
-                <CardBooking title="Total days" value="30 days" />
-                <CardBooking title="Sub total" value="$83,422" />
-                <CardBooking title="Tax (15%)" value="$23,399" />
-                <CardBooking title="Insurance" value="$7,492" />
-                <CardBooking title="Grand total price" value="$103,940" />
+              <CardBooking
+                title="Total days"
+                value={`${booking.totalDays} days`}
+              />
+              <CardBooking
+                title="Sub total"
+                value={moneyFormat.format(booking.subTotal)}
+              />
+              <CardBooking
+                title="Tax (10%)"
+                value={moneyFormat.format(booking.tax)}
+              />
+              <CardBooking
+                title="Grand total price"
+                value={moneyFormat.format(booking.grandTotal)}
+              />
               </div>
             </div>
           </div>
@@ -145,11 +184,16 @@ function Checkout({ params }: { params: { id: string } }) {
                   I agree with terms & conditions
                 </label>
               </div>
-              <Link href={`/booking-success/12321aa12/success`}>
-                <Button variant="default" size="default" className="mt-4">
-                  Make a Payment
-                </Button>
-              </Link>
+
+              <Button
+                variant="default"
+                size="default"
+                className="mt-4"
+                onClick={handlePayment}
+                disabled={isLoading}
+              >
+                Make a Payment
+              </Button>
             </div>
           </div>
         </div>
